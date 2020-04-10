@@ -2,4 +2,4 @@
 0;room_42;room;None;10;10;floor_8
 1;door_2;door;None;None;None;room_42
 2;box_1;object;None;None;None;room_42
-3;object_4;object;10;1;1;room_42
+3;object_x;object;10;1;1;room_42
