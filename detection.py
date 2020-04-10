@@ -35,16 +35,15 @@ class Detector():
     def identify_marker_objects(self, frame, ids, rvec, tvec):
         self.identified_marker_objects = []
         for counter, value in enumerate(ids):
-            value = value[0]
             aruco.drawAxis(frame, self.camera_matrix, Detector.dist_coeffs, rvec[counter], tvec[counter], 0.06)
             tvec[counter] = tvec[counter] * (Detector.factor_x, Detector.factor_y, Detector.factor_z)
             rot = cv2.Rodrigues(rvec[counter])
             self.calculate_attitude_angles(rot[0])
 
             if (value in self.data.marker_id.values) == True:
-                data_current_marker = self.data.loc[[value], :].values.tolist()
+                data_current_marker = self.data.loc[value, :].values.tolist()
             else:
-                data_current_marker = [None]
+                data_current_marker = [None, None]
 
             self.identified_marker_objects.append([ids[counter], data_current_marker, tvec[counter], 
                                                     rvec[counter] * Detector.radiant_factor, rot[0], 
@@ -64,6 +63,29 @@ class Detector():
 
         self.attitude_angles = np.array([angle_yaw, angle_pitch, angle_roll]) * Detector.radiant_factor
 
+    def flatten_list_ids(self, items):
+        new_list = []
+        for item in items:
+            new_list.append(item[0])
+        return new_list
+
+    def flatten_list_objects(self, items):
+        new_list = []
+        for item in items:
+            if item[1] is not None:
+                new_list.append(item[1][1])
+            else:
+                new_list.append(None)
+        return new_list
+
+    def display_data(self, ids):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        identified_objects = self.flatten_list_objects(self.identified_marker_objects)
+        identified_objects = 'objects: ' + str(identified_objects)
+        display_text_marker = 'marker_ids: ' + str(ids)
+        cv2.putText(frame, identified_objects, (10,430), font, 0.45, (255,255,255), 1, cv2.LINE_AA)
+        cv2.putText(frame, display_text_marker, (10,450), font, 0.45, (255,255,255), 1, cv2.LINE_AA)
+
 
 if __name__ == "__main__":
     detector = Detector()
@@ -78,34 +100,19 @@ if __name__ == "__main__":
 
         if corners != []:
             rvec, tvec ,_ = aruco.estimatePoseSingleMarkers(corners, 0.05, detector.camera_matrix, Detector.dist_coeffs)
+            ids = detector.flatten_list_ids(ids)
             detector.identify_marker_objects(frame, ids, rvec, tvec)
-            print(detector.identified_marker_objects)
+            detector.display_data(ids)
         else:
             pass
 
         cv2.imshow('frame',frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        elif cv2.waitKey(1) & 0xFF == ord('c'):
+            cv2.imwrite('screenshot.png',frame)
+        else:
+            pass
 
     cap.release()
     cv2.destroyAllWindows()
-
-
-# class FrameHandler(Detector):
-
-# def __init__(self):
-#     pass
-
-# def display_data(self, text):
-#     # show values in frame
-#     # ont = cv2.FONT_HERSHEY_SIMPLEX
-#     # cv2.putText(frame,'OpenCV',(10,500), font, 4,(255,255,255),2,cv2.LINE_AA)
-#     pass
-
-# def take_snapshot(self):
-#     # take snap shot
-#     # cv2.imshow('frame',frame)
-#     # if cv2.waitKey(100) & 0xFF == ord('c'):
-#     # cv2.imwrite('screenshot.png',frame)
-#     # if cv2.waitKey(100) & 0xFF == ord('q'):
-#     pass
