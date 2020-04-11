@@ -17,8 +17,8 @@ class Detector():
     parameters = aruco.DetectorParameters_create()
 
     def __init__(self, camera_matrix = None):
-        self.camera_matrix = camera_matrix
         self.data = None
+        self.camera_matrix = camera_matrix
         self.attitude_angles = None
         self.identified_marker_objects = None
 
@@ -32,21 +32,28 @@ class Detector():
                                         [0, focal_length, center[1]], 
                                         [0, 0, 1]], dtype = "double")
 
+    def flatten_ids(self, ids):
+        items = []
+        for item in ids:
+            items.append(item[0])
+        return items
+
     def identify_marker_objects(self, frame, ids, rvec, tvec):
         self.identified_marker_objects = []
-        for counter, value in enumerate(ids):
-            aruco.drawAxis(frame, self.camera_matrix, Detector.dist_coeffs, rvec[counter], tvec[counter], 0.06)
-            tvec[counter] = tvec[counter] * (Detector.factor_x, Detector.factor_y, Detector.factor_z)
-            rot = cv2.Rodrigues(rvec[counter])
+        for count, item in enumerate(ids):
+            aruco.drawAxis(frame, self.camera_matrix, Detector.dist_coeffs, rvec[count], tvec[count], 0.06)
+
+            tvec[count] = tvec[count] * (Detector.factor_x, Detector.factor_y, Detector.factor_z)
+            rot = cv2.Rodrigues(rvec[count])
             self.calculate_attitude_angles(rot[0])
 
-            if (value in self.data.marker_id.values) == True:
-                data_current_marker = self.data.loc[value, :].values.tolist()
+            if (item in self.data.marker_id.values) == True:
+                data_current_marker = self.data.loc[item, :].values.tolist()
             else:
                 data_current_marker = [None, None]
 
-            self.identified_marker_objects.append([ids[counter], data_current_marker, tvec[counter], 
-                                                    rvec[counter] * Detector.radiant_factor, rot[0], 
+            self.identified_marker_objects.append([ids[count], data_current_marker, tvec[count], 
+                                                    rvec[count] * Detector.radiant_factor, rot[0], 
                                                     self.attitude_angles]) 
            
     def calculate_attitude_angles(self, rot):
@@ -63,28 +70,23 @@ class Detector():
 
         self.attitude_angles = np.array([angle_yaw, angle_pitch, angle_roll]) * Detector.radiant_factor
 
-    def flatten_list_ids(self, items):
-        new_list = []
-        for item in items:
-            new_list.append(item[0])
-        return new_list
+    def display_data(self, ids):
+        object_names = self.get_object_names(self.identified_marker_objects)
+        object_names = 'objects: ' + str(object_names)
+        marker_ids = 'marker_ids: ' + str(ids)
 
-    def flatten_list_objects(self, items):
-        new_list = []
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(frame, object_names, (10,430), font, 0.45, (255,255,255), 1, cv2.LINE_AA)
+        cv2.putText(frame, marker_ids, (10,450), font, 0.45, (255,255,255), 1, cv2.LINE_AA)
+
+    def get_object_names(self, items):
+        names = []
         for item in items:
             if item[1] is not None:
-                new_list.append(item[1][1])
+                names.append(item[1][1])
             else:
-                new_list.append(None)
-        return new_list
-
-    def display_data(self, ids):
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        identified_objects = self.flatten_list_objects(self.identified_marker_objects)
-        identified_objects = 'objects: ' + str(identified_objects)
-        display_text_marker = 'marker_ids: ' + str(ids)
-        cv2.putText(frame, identified_objects, (10,430), font, 0.45, (255,255,255), 1, cv2.LINE_AA)
-        cv2.putText(frame, display_text_marker, (10,450), font, 0.45, (255,255,255), 1, cv2.LINE_AA)
+                names.append(None)
+        return names
 
 
 if __name__ == "__main__":
@@ -100,7 +102,7 @@ if __name__ == "__main__":
 
         if corners != []:
             rvec, tvec ,_ = aruco.estimatePoseSingleMarkers(corners, 0.05, detector.camera_matrix, Detector.dist_coeffs)
-            ids = detector.flatten_list_ids(ids)
+            ids = detector.flatten_ids(ids)
             detector.identify_marker_objects(frame, ids, rvec, tvec)
             detector.display_data(ids)
         else:
