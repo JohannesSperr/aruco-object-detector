@@ -1,5 +1,5 @@
 # Aruco-Object-Detector
-## Readme content
+## Table of contents
 - Introduction
 - Architecture
 - Functions
