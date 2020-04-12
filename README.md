@@ -1,2 +1,17 @@
 # Aruco-Object-Detector
-Documentation will be added soon
+## Readme content
+- Introduction
+- Architecture
+- Functions
+- Results
+- Conclusion
+
+## Introduction
+
+## Architecture
+
+## Functions
+
+## Results
+
+## Conclusion
